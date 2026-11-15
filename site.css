@@ -444,3 +444,21 @@ html[data-theme=light] .brand-image-stage .logo-on-dark{display:none}
 .dialog-instagram.is-disabled{opacity:.55;pointer-events:none}
 .dialog-actions{flex-wrap:wrap}
 .dialog-extra .dialog-gallery-note{margin-top:10px}
+
+/* ===== v3 — footer socials, lightbox ===== */
+.footer-social{display:flex;gap:18px;align-items:center}
+.footer-social a{font-size:11px;color:#9aa1b8;transition:color .2s}.footer-social a:hover{color:var(--cyan)}
+@media(max-width:900px){.footer-social{order:2}}
+.dialog-gallery img,.compare-item img{cursor:zoom-in}
+.lightbox{border:0;padding:0;margin:0;width:100vw;height:100vh;max-width:none;max-height:none;background:rgba(5,7,13,.95);color:#fff}
+.lightbox::backdrop{background:rgba(0,0,0,.7)}
+.lightbox figure{margin:0;height:100%;display:grid;place-items:center;align-content:center;gap:12px;padding:64px 76px}
+.lightbox img{max-width:100%;max-height:calc(100vh - 150px);object-fit:contain;border-radius:10px;box-shadow:0 20px 80px #000a;background:#fff}
+.lightbox figcaption{font-size:13px;color:#b8bfd6;text-align:center;min-height:1.4em}
+.lightbox button{position:absolute;display:grid;place-items:center;width:46px;height:46px;border-radius:50%;border:1px solid rgba(255,255,255,.25);background:rgba(20,24,40,.75);color:#fff;font-size:26px;line-height:1;cursor:pointer;transition:background .2s}
+.lightbox button:hover{background:rgba(70,80,120,.9)}
+.lightbox-close{top:16px;inset-inline-end:16px}
+.lightbox-prev{inset-inline-start:14px;top:50%;transform:translateY(-50%)}
+.lightbox-next{inset-inline-end:14px;top:50%;transform:translateY(-50%)}
+.lightbox[data-single] .lightbox-prev,.lightbox[data-single] .lightbox-next{display:none}
+@media(max-width:620px){.lightbox figure{padding:60px 12px}.lightbox-prev,.lightbox-next{top:auto;bottom:16px;transform:none}}

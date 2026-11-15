@@ -3,7 +3,6 @@
 const configNode=document.getElementById('site-config');
 if(!configNode) return;
 const config=JSON.parse(configNode.textContent);
-const isDemo=document.documentElement.hasAttribute('data-demo');
 const reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 const q=(selector,root=document)=>root.querySelector(selector);
 const qa=(selector,root=document)=>Array.from(root.querySelectorAll(selector));
@@ -21,7 +20,6 @@ qa('[data-language-control]').forEach(control=>{
    if(!['fa','ar','en'].includes(lang))return;
    document.cookie='tmk_locale='+lang+'; Path=/; Max-Age=31536000; SameSite=Lax';
    try{localStorage.setItem('tmk_locale',lang)}catch(e){}
-   if(isDemo){location.href=lang==='fa'?'index.html':'demo-'+lang+'.html';return}
    const path=location.pathname;
    const next=/^\/(fa|ar|en)(?=\/|$)/.test(path)?path.replace(/^\/(fa|ar|en)/,'/'+lang):'/'+lang+'/';
    location.href=next+location.search+location.hash;
@@ -166,7 +164,7 @@ function fillGallery(container,images,placeholders=2){
   images.forEach((image,index)=>{
    if(!image?.src)return;
    const figure=make('figure','gallery-figure');
-   const pic=document.createElement('img');pic.src=image.src;pic.loading='lazy';pic.alt=image.alt||'';
+   const pic=document.createElement('img');pic.src=image.src;pic.loading='lazy';pic.alt=image.alt||'';pic.tabIndex=0;pic.setAttribute('role','button');pic.title=ui.lightbox_open||'Enlarge';
    figure.append(pic);if(image.caption)figure.append(make('figcaption','',image.caption));
    container.append(figure);
   });
@@ -216,7 +214,7 @@ qa('.project-visual').forEach(link=>link.addEventListener('click',e=>{
  compareSection.hidden=!(beforeImgs.length||afterImgs.length||legacyCompare);
  for(const [key,label,imgs] of [['before',ui.before||'Before',beforeImgs],['after',ui.after||'After',afterImgs]]){
   const item=make('div','compare-item');item.append(make('strong','',label));
-  if(imgs.length){imgs.forEach(image=>{const img=make('img');img.src=image.src;img.alt=image.alt||label;img.loading='lazy';item.append(img)})}
+  if(imgs.length){imgs.forEach(image=>{const img=make('img');img.src=image.src;img.alt=image.alt||label;img.loading='lazy';img.tabIndex=0;img.setAttribute('role','button');img.title=ui.lightbox_open||'Enlarge';item.append(img)})}
   else item.append(make('div','compare-empty',ui.placeholder||'Pending screenshot'));
   compare.append(item);
  }
@@ -262,7 +260,7 @@ qa('[data-plugin-open]').forEach(button=>button.addEventListener('click',()=>{
  else{more.removeAttribute('href');more.setAttribute('aria-disabled','true')}
  const download=q('.plugin-download',pluginDialog);
  download.textContent=ui.download||'Download plugin';download.disabled=!details.downloadUrl;
- download.onclick=()=>{if(details.downloadUrl&&/^(https?:\/\/|assets\/)/.test(details.downloadUrl)){window.open(details.downloadUrl,'_blank','noopener,noreferrer')}};
+ download.onclick=()=>{if(details.downloadUrl&&/^(https?:\/\/|(\.\.\/)?assets\/)/.test(details.downloadUrl)){window.open(details.downloadUrl,'_blank','noopener,noreferrer')}};
  q('.dialog-footnote',pluginDialog).textContent=details.downloadUrl?'':ui.download_pending||'Download not published';
  showModal(pluginDialog);
 }));
@@ -272,5 +270,41 @@ for(const dialog of [projectDialog,pluginDialog]){
  dialog.addEventListener('click',e=>{if(e.target===dialog)closeModal(dialog)});
  dialog.addEventListener('close',()=>document.body.classList.remove('modal-open'));
 }
+
+// Image lightbox: any project screenshot opens full-size.
+const lightbox=document.createElement('dialog');lightbox.className='lightbox';lightbox.setAttribute('aria-label',ui.lightbox_open||'Image viewer');
+lightbox.innerHTML='<button class="lightbox-close" type="button"></button><button class="lightbox-nav lightbox-prev" type="button">‹</button><figure><img alt=""/><figcaption></figcaption></figure><button class="lightbox-nav lightbox-next" type="button">›</button>';
+document.body.append(lightbox);
+q('.lightbox-close',lightbox).textContent='×';
+q('.lightbox-close',lightbox).setAttribute('aria-label',ui.lightbox_close||'Close');
+q('.lightbox-prev',lightbox).setAttribute('aria-label',ui.lightbox_prev||'Previous');
+q('.lightbox-next',lightbox).setAttribute('aria-label',ui.lightbox_next||'Next');
+let lbGroup=[],lbIndex=0;
+const lbImg=q('img',lightbox),lbCap=q('figcaption',lightbox);
+function lbShow(i){
+ if(!lbGroup.length)return;
+ lbIndex=(i+lbGroup.length)%lbGroup.length;
+ const src=lbGroup[lbIndex];lbImg.src=src.currentSrc||src.src;lbImg.alt=src.alt||'';lbCap.textContent=(src.alt||'')+(lbGroup.length>1?'  ('+(lbIndex+1)+' / '+lbGroup.length+')':'');
+ if(lbGroup.length>1)lightbox.removeAttribute('data-single');else lightbox.setAttribute('data-single','');
+}
+function lbOpen(img){
+ const scope=img.closest('.project-dialog')||document;
+ lbGroup=qa('.dialog-gallery img, .compare-item img',scope).filter(el=>!el.closest('[hidden]'));
+ lbShow(Math.max(0,lbGroup.indexOf(img)));
+ if(typeof lightbox.showModal==='function')lightbox.showModal();else lightbox.setAttribute('open','');
+}
+document.addEventListener('click',e=>{const img=e.target.closest&&e.target.closest('.dialog-gallery img, .compare-item img');if(img&&!lightbox.contains(img))lbOpen(img)});
+document.addEventListener('keydown',e=>{
+ const img=document.activeElement;
+ if((e.key==='Enter'||e.key===' ')&&img&&img.matches&&img.matches('.dialog-gallery img, .compare-item img')){e.preventDefault();lbOpen(img);return}
+ if(!lightbox.open)return;
+ const rtl=document.documentElement.dir==='rtl';
+ if(e.key==='ArrowRight')lbShow(lbIndex+(rtl?-1:1));
+ if(e.key==='ArrowLeft')lbShow(lbIndex+(rtl?1:-1));
+});
+q('.lightbox-prev',lightbox).addEventListener('click',()=>lbShow(lbIndex-1));
+q('.lightbox-next',lightbox).addEventListener('click',()=>lbShow(lbIndex+1));
+q('.lightbox-close',lightbox).addEventListener('click',()=>lightbox.close());
+lightbox.addEventListener('click',e=>{if(e.target===lightbox||e.target.tagName==='FIGURE')lightbox.close()});
 const year=q('#year');if(year)year.textContent=String(new Date().getFullYear());
 })();
